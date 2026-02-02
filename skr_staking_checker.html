@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seeker Staking Dashboard</title>
+    <!-- Solana Web3.js -->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #00ffa3;
+            --primary-glow: rgba(0, 255, 163, 0.4);
+            --bg-dark: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-sec: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(76, 29, 149, 0.4) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 255, 163, 0.15) 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .dashboard {
+            width: 100%;
+            max-width: 900px;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--text-sec);
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 40px;
+        }
+
+        .input-field {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px 24px;
+            color: white;
+            font-size: 1.1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 255, 163, 0.1);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .search-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .search-btn:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            display: none; /* Hidden by default */
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-label {
+            color: var(--text-sec);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .stat-sub {
+            font-size: 0.9rem;
+            color: var(--primary);
+            margin-top: 5px;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
+        .error-msg {
+            color: #ff4d4d;
+            background: rgba(255, 77, 77, 0.1);
+            border: 1px solid rgba(255, 77, 77, 0.2);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .links-bar {
+            margin-top: 40px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .link-item {
+            color: var(--text-sec);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .link-item:hover {
+            color: var(--primary);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Utility classes */
+        .w-full { grid-column: 1 / -1; }
+        .text-glow { text-shadow: 0 0 20px rgba(0, 255, 163, 0.3); }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <div class="header">
+            <h1 class="title">SEEKER <span style="color: var(--primary)">STAKING</span></h1>
+            <p class="subtitle">Solana Mobile Guardian Dashboard</p>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="walletInput" class="input-field" placeholder="Enter Solana Wallet Address..." autocomplete="off">
+            <button id="searchBtn" class="search-btn" onclick="fetchData()">SEARCH</button>
+        </div>
+
+        <div id="errorBox" class="error-msg"></div>
+
+        <div id="loader" class="loader">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px; color: var(--text-sec);">Scanning Blockchain...</p>
+        </div>
+
+        <div id="resultsArea" class="stats-grid">
+            <!-- Total Assets -->
+            <div class="stat-card w-full" style="background: linear-gradient(135deg, rgba(0,255,163,0.1) 0%, rgba(255,255,255,0.05) 100%);">
+                <div class="stat-label">
+                    <span>💎 Total Assets</span>
+                </div>
+                <div class="stat-value text-glow" id="totalAssets">0.00 SKR</div>
+                <div class="stat-sub">Wallet + Staked</div>
+            </div>
+
+            <!-- Wallet Balance -->
+            <div class="stat-card">
+                <div class="stat-label">
+                    <span>👛 Wallet Balance</span>
+                </div>
+                <div class="stat-value" id="walletBalance">0.00</div>
+                <div class="stat-sub">SKR</div>
+            </div>
+
+            <!-- Staked Balance -->
+            <div class="stat-card">
+                <div class="stat-label">
+                    <span>🔒 Staked Amount</span>
+                </div>
+                <div class="stat-value" id="stakedBalance">0.00</div>
+                <div class="stat-sub">Seeker Guardian</div>
+            </div>
+
+             <!-- Status -->
+             <div class="stat-card">
+                <div class="stat-label">
+                    <span>📡 Status</span>
+                </div>
+                <div class="stat-value" id="statusBadge" style="font-size: 1.4rem;">Inactive</div>
+                <div class="stat-sub" id="walletShort"></div>
+            </div>
+        </div>
+
+        <div class="links-bar">
+            <a href="https://stake.solanamobile.com/" target="_blank" class="link-item">Official Staking ↗</a>
+            <a href="https://solscan.io/" target="_blank" class="link-item">Solscan Explorer ↗</a>
+        </div>
+    </div>
+
+    <script>
+        const SKR_MINT = 'SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3';
+        const RPC_URL = 'https://api.mainnet-beta.solana.com';
+
+        // Listen for Enter key
+        document.getElementById('walletInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') fetchData();
+        });
+
+        async function fetchData() {
+            const input = document.getElementById('walletInput');
+            const address = input.value.trim();
+            const btn = document.getElementById('searchBtn');
+            const loader = document.getElementById('loader');
+            const results = document.getElementById('resultsArea');
+            const errorBox = document.getElementById('errorBox');
+
+            // Reset UI
+            errorBox.style.display = 'none';
+            results.style.display = 'none';
+            
+            if (!address) {
+                showError('Please enter a wallet address');
+                return;
+            }
+
+            try {
+                // Determine if valid pubkey
+                new solanaWeb3.PublicKey(address);
+            } catch (err) {
+                showError('Invalid Solana address format');
+                return;
+            }
+
+            // Start Loading
+            btn.disabled = true;
+            btn.innerText = 'Scanning...';
+            loader.style.display = 'block';
+
+            try {
+                const connection = new solanaWeb3.Connection(RPC_URL, 'confirmed');
+                const walletPubkey = new solanaWeb3.PublicKey(address);
+                const mintPubkey = new solanaWeb3.PublicKey(SKR_MINT);
+
+                // --- 1. Fetch Wallet Balance ---
+                // We use getParsedTokenAccountsByOwner but will handle raw amounts manually for precision
+                // SKR Decimals = 6
+                const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+                    walletPubkey,
+                    { mint: mintPubkey }
+                );
+
+                let walletRaw = 0n;
+                tokenAccounts.value.forEach(acc => {
+                    const rawAmount = BigInt(acc.account.data.parsed.info.tokenAmount.amount);
+                    walletRaw += rawAmount;
+                });
+
+                // Convert raw (6 decimals) to float
+                // Calculation: raw / 1,000,000
+                const walletVal = Number(walletRaw) / 1_000_000;
+
+
+                // --- 2. Fetch Staked Balance ---
+                // Logic derived from Python script & skrStake.js
+                // SKR Staking Program: SKRskrmtL83pcL4YqLWt6iPefDqwXQWHSw9S9vz94BZ
+                const STAKE_PROG = new solanaWeb3.PublicKey('SKRskrmtL83pcL4YqLWt6iPefDqwXQWHSw9S9vz94BZ');
+                
+                // Try Offset 41 first (Common)
+                let filters = [{ memcmp: { offset: 41, bytes: address } }];
+                let stakeAccounts = await connection.getProgramAccounts(STAKE_PROG, { filters: filters });
+
+                if (stakeAccounts.length === 0) {
+                    // Fallback to Offset 40
+                    filters = [{ memcmp: { offset: 40, bytes: address } }];
+                    stakeAccounts = await connection.getProgramAccounts(STAKE_PROG, { filters: filters });
+                }
+
+                let stakedVal = 0;
+                let isStaking = false;
+
+                if (stakeAccounts.length > 0) {
+                    const userAcc = stakeAccounts[0];
+                    const data = userAcc.account.data;
+
+                    // Parse User Shares (Offset 104, u64)
+                    if (data.length >= 112) {
+                        const userShares = data.readBigUInt64LE(104);
+                        
+                        if (userShares > 0n) {
+                            // Fetch Global State for Exchange Rate
+                            // Global State: 4aAEUKCcju9iAEAgdeaNz4RC7sCPv63q5g714nw4QY68
+                            const GLOBAL_ADDR = new solanaWeb3.PublicKey('4aAEUKCcju9iAEAgdeaNz4RC7sCPv63q5g714nw4QY68');
+                            const globalInfo = await connection.getAccountInfo(GLOBAL_ADDR);
+                            
+                            if (globalInfo && globalInfo.data.length >= 3624) {
+                                const gData = globalInfo.data;
+                                // Total Staked (Offset 3616)
+                                const totalStaked = gData.readBigUInt64LE(3616);
+                                // Total Shares (Offset 1344)
+                                const totalShares = gData.readBigUInt64LE(1344);
+
+                                if (totalShares > 0n) {
+                                    // Calculate Real Balance
+                                    // Formula: (UserShares * TotalStaked) / TotalShares
+                                    // Result is in 9 decimals (Staking contract precision)
+                                    const stakedRaw = (userShares * totalStaked) / totalShares;
+                                    stakedVal = Number(stakedRaw) / 1_000_000_000; // Divide by 10^9
+                                    isStaking = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // --- Update UI ---
+                const totalVal = walletVal + stakedVal;
+
+                document.getElementById('walletBalance').innerText = formatNum(walletVal);
+                document.getElementById('stakedBalance').innerText = formatNum(stakedVal);
+                document.getElementById('totalAssets').innerText = formatNum(totalVal) + " SKR";
+                
+                // Status Badge
+                const badge = document.getElementById('statusBadge');
+                if (stakedVal > 0) {
+                    badge.innerText = 'Active 🟢';
+                    badge.style.color = '#00ffa3';
+                } else if (walletVal > 0) {
+                    badge.innerText = 'Holder 🟡';
+                    badge.style.color = '#ffd700';
+                } else {
+                    badge.innerText = 'Empty ⚪';
+                    badge.style.color = '#94a3b8';
+                }
+
+                document.getElementById('walletShort').innerText = address.slice(0,4) + '...' + address.slice(-4);
+
+                // Show Results
+                loader.style.display = 'none';
+                results.style.display = 'grid'; // Enable Grid
+                btn.disabled = false;
+                btn.innerText = 'SEARCH';
+
+            } catch (err) {
+                console.error(err);
+                showError('Connection Error: ' + err.message);
+                loader.style.display = 'none';
+                btn.disabled = false;
+                btn.innerText = 'SEARCH';
+            }
+        }
+
+        function showError(msg) {
+            const box = document.getElementById('errorBox');
+            box.innerText = '⚠️ ' + msg;
+            box.style.display = 'block';
+        }
+
+        function formatNum(num) {
+            return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // Polyfill for BigInt read/write in Uint8Array if needed (Web3.js buffers usually support it but just in case for standard Buffer)
+        // Since we are in browser, we use DataView
+        // Adding helper to prototype or wrapping
+        Uint8Array.prototype.readBigUInt64LE = function(offset) {
+            const view = new DataView(this.buffer, this.byteOffset, this.byteLength);
+            return view.getBigUint64(offset, true);
+        };
+
+    </script>
+</body>
+</html>
