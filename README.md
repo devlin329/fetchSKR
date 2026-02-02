@@ -1,5 +1,3 @@
-# fetchSKR
-skr staking checker
 # SKR 查詢原理詳解 (Seeker Staking Logic)
 
 這份文件詳細說明 `skr_staking_checker.py` 如何從 Solana 鏈上查詢您的 SKR 代幣餘額與質押狀態。
@@ -74,13 +72,15 @@ skr staking checker
 由於質押會產生獎勵，池子裡的 SKR 會變多，但份額總數不變 (或者變動比例不同)，這導致「匯率」會隨時間增加。
 
 1. **計算匯率 (Exchange Rate)**:
-   $$ \text{匯率} = \frac{\text{總質押量 (Total Staked)}}{\text{總份額 (Total Shares)}} $$
-   _(這個匯率通常大於 1，代表 1 份額可以換回大於 1 的 SKR)_
+
+   > 匯率 = 總質押量 (Total Staked) / 總份額 (Total Shares)
+   > _(這個匯率通常大於 1，代表 1 份額可以換回大於 1 的 SKR)_
 
 2. **計算您的餘額**:
-   $$ \text{您的質押餘額} = \text{您的份額 (User Shares)} \times \text{匯率} $$
 
-3. **格式化**: 最後同樣除以 $10^9$ (質押合約內部計算似乎是用 9 位精度，這也是為什麼程式碼這邊用 $10^9$)。
+   > 您的質押餘額 = 您的份額 (User Shares) × 匯率
+
+3. **格式化**: 最後同樣除以 10^9 (質押合約內部計算似乎是用 9 位精度，這也是為什麼程式碼這邊用 10^9)。
 
 ---
 
