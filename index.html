@@ -244,6 +244,20 @@
             <button id="searchBtn" class="search-btn" onclick="fetchData()">SEARCH</button>
         </div>
 
+        <!-- RPC Settings Toggle -->
+        <div style="text-align: right; margin-bottom: 10px;">
+            <button id="settingsBtn" onclick="toggleSettings()" style="background: none; border: none; color: var(--text-sec); cursor: pointer; font-size: 0.9rem;">
+                ⚙️ RPC Settings
+            </button>
+        </div>
+        
+        <!-- RPC Input (Hidden by default) -->
+        <div id="settingsPanel" style="display: none; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px;">
+            <label style="display: block; color: var(--text-sec); margin-bottom: 8px; font-size: 0.9rem;">Solana RPC Endpoint:</label>
+            <input type="text" id="rpcInput" class="input-field" value="https://api.mainnet-beta.solana.com" placeholder="https://..." style="padding: 10px; font-size: 0.9rem;">
+            <p style="color: #666; font-size: 0.8rem; margin-top: 5px;">If you get a 403 error, try using a free RPC URL from Helius, QuickNode, or Alchemy.</p>
+        </div>
+
         <div id="errorBox" class="error-msg"></div>
 
         <div id="loader" class="loader">
@@ -297,16 +311,21 @@
 
     <script>
         const SKR_MINT = 'SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3';
-        const RPC_URL = 'https://api.mainnet-beta.solana.com';
-
+        
         // Listen for Enter key
         document.getElementById('walletInput').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') fetchData();
         });
 
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
         async function fetchData() {
             const input = document.getElementById('walletInput');
             const address = input.value.trim();
+            const rpcUrl = document.getElementById('rpcInput').value.trim() || 'https://api.mainnet-beta.solana.com';
             const btn = document.getElementById('searchBtn');
             const loader = document.getElementById('loader');
             const results = document.getElementById('resultsArea');
@@ -335,7 +354,7 @@
             loader.style.display = 'block';
 
             try {
-                const connection = new solanaWeb3.Connection(RPC_URL, 'confirmed');
+                const connection = new solanaWeb3.Connection(rpcUrl, 'confirmed');
                 const walletPubkey = new solanaWeb3.PublicKey(address);
                 const mintPubkey = new solanaWeb3.PublicKey(SKR_MINT);
 
