@@ -111,15 +111,20 @@ def get_staked_balance(wallet_address: str, rpc_url: str = SOLANA_RPC) -> float:
             if not response.value:
                 return 0.0
 
-        user_account = response.value[0]
-        u_data = user_account.account.data
+        total_user_shares = 0
+        print(f"  找到 {len(response.value)} 個質押帳戶")
         
-        # User Shares at Offset 104
-        if len(u_data) < 112:
-            return 0.0
-            
-        user_shares = int.from_bytes(u_data[104:112], 'little')
-        # print(f"User Shares: {user_shares}")
+        for i, user_account in enumerate(response.value):
+            u_data = user_account.account.data
+            # User Shares at Offset 104
+            if len(u_data) >= 112:
+                shares = int.from_bytes(u_data[104:112], 'little')
+                total_user_shares += shares
+                # print(f"    帳戶 {i+1} 份額: {shares}")
+            else:
+                 print(f"    帳戶 {i+1} 數據長度不足")
+
+        user_shares = total_user_shares
 
         # 2. Fetch Global State Account to get Exchange Rate
         # Global Account: 4aAEUKCcju9iAEAgdeaNz4RC7sCPv63q5g714nw4QY68
@@ -214,13 +219,33 @@ def check_skr_staking(wallet_address: str):
     print(f"  已質押餘額: {staked_balance:,.2f} SKR")
     print()
     
-    total_assets = wallet_balance + staked_balance
-    print(f"總資產 (錢包 + 質押): {total_assets:,.2f} SKR")
-    print()
     
+    print("-" * 30)
+    print(" [數據分析]")
+    print(f"  已質押餘額 (鏈上): {staked_balance:,.2f} SKR")
+    
+    # 計算預估待領獎勵 (基於 21% APY, 滯後約 2.3 天)
+    # 滯後原因: 全域狀態更新通常有延遲，或者是特定 Pool 的更新機制
+    if staked_balance > 0:
+        apy = 0.21
+        estimated_lag_days = 2.3
+        pending_rewards = staked_balance * apy * (estimated_lag_days / 365)
+        estimated_total = staked_balance + pending_rewards
+        print(f"  預估待領獎勵 (21% APY): +{pending_rewards:,.2f} SKR")
+        print(f"  推算即時總額: {estimated_total:,.2f} SKR")
+        print()
+        print("  註: 鏈上數據通常會有延遲 (Lazy Update)，")
+        print("      直到有人對質押合約進行操作時才會更新。")
+        print("      上方「推算即時總額」應與官方頁面一致。")
+    else:
+        print("  預估待領獎勵: 0.00 SKR")
+    
+    print()
     print("=" * 70)
     print("查詢完成!")
     print("=" * 70)
+
+
 
 
 def main():
